@@ -13,21 +13,31 @@ from time import process_time
 from Dataset_splitter import data_splitter
 import csv
 
+
 def documents_vector(documents, model):
     document_vectors = []
     for doc in documents:
         try:
             doc_words = [word for word in doc if word in model.wv.vocab]
-        except : # model2.wv.vocab is deprecated
+        except (
+            Exception
+        ):  # Catch KeyError exception when accessing model.wv.vocab
             doc_words = [word for word in doc if word in model.wv.key_to_index]
         if len(doc_words) > 0:
-            document_vectors.append(np.mean([model.wv[word] for word in doc_words], axis=0))
+            document_vectors.append(
+                np.mean([model.wv[word] for word in doc_words], axis=0)
+            )
         else:
             document_vectors.append(np.zeros(model.vector_size))
     return document_vectors
 
 
-def k_fold_tfidf(filename,classifier1 = LogisticRegression(class_weight="balanced", max_iter=500, penalty=None)):
+def k_fold_tfidf(
+    filename,
+    classifier1=LogisticRegression(
+        class_weight="balanced", max_iter=500, penalty=None
+    ),
+):
 
     texts, text_label = [], dict()
 
@@ -86,14 +96,18 @@ def k_fold_tfidf(filename,classifier1 = LogisticRegression(class_weight="balance
         )
 
         # tfidf vectorization
-        model1 = TfidfVectorizer(sublinear_tf=True, analyzer="char", ngram_range=(1, 3))
+        model1 = TfidfVectorizer(
+            sublinear_tf=True, analyzer="char", ngram_range=(1, 3)
+        )
         X_train_tfidf = model1.fit_transform(X_train)
         print(X_train_tfidf.get_shape())
         x_val_tfidf = model1.transform(X_val)
         # classifier fitting
         classifier1.fit(X_train_tfidf, y_train)
         predtfidf = classifier1.predict(x_val_tfidf)
-        precisiontfidf, recalltfidf, fscoretfidf, _ = precision_recall_fscore_support(y_val, predtfidf, average="macro")
+        precisiontfidf, recalltfidf, fscoretfidf, _ = (
+            precision_recall_fscore_support(y_val, predtfidf, average="macro")
+        )
         f1_scores_tfidf.append(fscoretfidf)
         if maxf1 < fscoretfidf:
             maxf1 = fscoretfidf
@@ -115,7 +129,12 @@ def k_fold_tfidf(filename,classifier1 = LogisticRegression(class_weight="balance
     return maxf1model, maxf1
 
 
-def k_fold_w2v(filename,classifier2 = LogisticRegression(class_weight="balanced", max_iter=500, penalty=None)):
+def k_fold_w2v(
+    filename,
+    classifier2=LogisticRegression(
+        class_weight="balanced", max_iter=500, penalty=None
+    ),
+):
 
     texts, text_label = [], dict()
 
@@ -180,9 +199,17 @@ def k_fold_w2v(filename,classifier2 = LogisticRegression(class_weight="balanced"
         for speech in X_train:
             preproc_training_set.append(gensim.utils.simple_preprocess(speech))
         for speech in X_val:
-            preproc_validation_set.append(gensim.utils.simple_preprocess(speech))
+            preproc_validation_set.append(
+                gensim.utils.simple_preprocess(speech)
+            )
         # w2v model training
-        modelw2v = gensim.models.Word2Vec(preproc_training_set, vector_size=150, window=10, min_count=2, workers=10)
+        modelw2v = gensim.models.Word2Vec(
+            preproc_training_set,
+            vector_size=150,
+            window=10,
+            min_count=2,
+            workers=10,
+        )
         # documents vectorization
         X_train_w2v = documents_vector(preproc_training_set, modelw2v)
         X_val_w2v = documents_vector(preproc_validation_set, modelw2v)
@@ -190,7 +217,9 @@ def k_fold_w2v(filename,classifier2 = LogisticRegression(class_weight="balanced"
         classifier2.fit(X_train_w2v, y_train)
         # classifier predicting
         predw2v = classifier2.predict(X_val_w2v)
-        precisionw2v, recallw2v, fscorew2v, _ = precision_recall_fscore_support(y_val, predw2v, average="macro")
+        precisionw2v, recallw2v, fscorew2v, _ = (
+            precision_recall_fscore_support(y_val, predw2v, average="macro")
+        )
         f1_scores_w2v.append(fscorew2v)
         if maxf1 < fscorew2v:
             maxf1 = fscorew2v
@@ -210,10 +239,15 @@ def k_fold_w2v(filename,classifier2 = LogisticRegression(class_weight="balanced"
     print("tempo impiegato")
     print(tempo2 - tempo1)
 
-    return maxf1model, maxf1 
+    return maxf1model, maxf1
 
 
-def k_fold_fstxt(filename,classifier3 = LogisticRegression(class_weight="balanced", max_iter=500, penalty=None)):
+def k_fold_fstxt(
+    filename,
+    classifier3=LogisticRegression(
+        class_weight="balanced", max_iter=500, penalty=None
+    ),
+):
 
     texts, text_label = [], dict()
 
@@ -278,11 +312,18 @@ def k_fold_fstxt(filename,classifier3 = LogisticRegression(class_weight="balance
         for speech in X_train:
             preproc_training_set.append(gensim.utils.simple_preprocess(speech))
         for speech in X_val:
-            preproc_validation_set.append(gensim.utils.simple_preprocess(speech))
+            preproc_validation_set.append(
+                gensim.utils.simple_preprocess(speech)
+            )
         # fstxt training
         modelfstxt = gensim.models.fasttext.FastText(
-            sentences=preproc_training_set, vector_size=150, window=10, min_count=2, workers=10)
-        
+            sentences=preproc_training_set,
+            vector_size=150,
+            window=10,
+            min_count=2,
+            workers=10,
+        )
+
         # documents vectorization
         X_train_w2v = documents_vector(preproc_training_set, modelfstxt)
         X_val_w2v = documents_vector(preproc_validation_set, modelfstxt)
@@ -290,7 +331,9 @@ def k_fold_fstxt(filename,classifier3 = LogisticRegression(class_weight="balance
         classifier3.fit(X_train_w2v, y_train)
         # classifier predicting
         predw2v = classifier3.predict(X_val_w2v)
-        precisionw2v, recallw2v, fscorefstxt, _ = precision_recall_fscore_support(y_val, predw2v, average="macro")
+        precisionw2v, recallw2v, fscorefstxt, _ = (
+            precision_recall_fscore_support(y_val, predw2v, average="macro")
+        )
         f1_scores_fstxt.append(fscorefstxt)
         if maxf1 < fscorefstxt:
             maxf1 = fscorefstxt
@@ -314,7 +357,7 @@ def k_fold_fstxt(filename,classifier3 = LogisticRegression(class_weight="balance
 
 def main():
 
-    path = './datasets/power/power-gb-train.tsv'
+    path = "./datasets/power/power-gb-train.tsv"
 
     if not (os.path.isfile(path)):
         print("this is not a File")
@@ -327,10 +370,10 @@ def main():
         label_training,
         label_validation,
         label_test,
-     ) = data_splitter(path)
+    ) = data_splitter(path)
 
     # print(training_set)
-    with open('ridge-results.csv', 'w', newline='\n') as file:
+    with open("ridge-results.csv", "w", newline="\n") as file:
         writer = csv.writer(file)
         writer.writerow(["Model", "F1-score"])
         model, f1 = k_fold_w2v(path, linear_model.RidgeClassifier())

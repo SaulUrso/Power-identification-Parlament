@@ -2,21 +2,11 @@ import os
 import sys
 import pandas as pd
 import numpy as np
-from sklearn.impute import KNNImputer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import KFold
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import precision_recall_fscore_support
-from sklearn.metrics import (
-    make_scorer,
-    accuracy_score,
-    precision_score,
-    recall_score,
-    f1_score,
-)
-from sklearn.model_selection import cross_val_score
 from time import process_time
 
 #  firt of all we define a function called data_splitter
@@ -83,7 +73,12 @@ def data_splitter(filename):
     # Now split the speeches based on speakers split above
     # but we consider the training part to split for validation
     # and training
-    training_set, validation_set, label_training, label_validation = [], [], [], []
+    training_set, validation_set, label_training, label_validation = (
+        [],
+        [],
+        [],
+        [],
+    )
 
     for i, (_, spk, text) in enumerate(texts):
 
@@ -142,10 +137,10 @@ def k_fold(filename):
 
     tempo1 = process_time()
     kf = KFold(n_splits=5, random_state=0, shuffle=True)
-    m = LogisticRegression(
-        class_weight="balanced", max_iter=500, penalty=None
+    m = LogisticRegression(class_weight="balanced", max_iter=500, penalty=None)
+    vec = TfidfVectorizer(
+        sublinear_tf=True, analyzer="char", ngram_range=(1, 3)
     )
-    vec = TfidfVectorizer(sublinear_tf=True, analyzer="char", ngram_range=(1, 3))
     training_set = np.array(training_set)
     label_training = np.array(label_training)
     f1_scores = []
@@ -167,7 +162,9 @@ def k_fold(filename):
         x_val = vec.transform(X_val)
         m.fit(X_train, y_train)
         pred = m.predict(x_val)
-        p, r, f, _ = precision_recall_fscore_support(y_val, pred, average="macro")
+        p, r, f, _ = precision_recall_fscore_support(
+            y_val, pred, average="macro"
+        )
         f1_scores.append(f)
         print(f)
 
@@ -200,11 +197,11 @@ def main():
         label_training,
         label_validation,
         label_test,
-     ) = data_splitter(path)
-    
+    ) = data_splitter(path)
+
     print(training_set)
 
-    #k_fold(path)
+    # k_fold(path)
 
 
 if __name__ == "__main__":
