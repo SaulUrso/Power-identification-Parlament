@@ -1,0 +1,11 @@
+# Ignora i file di sistema Mac
+.DS_store
+
+# Ignora la cartella node_modules
+Embeddings
+
+# Ignora cartelle cache
+__pycache__
+
+# Ignore dataset
+Dataset
