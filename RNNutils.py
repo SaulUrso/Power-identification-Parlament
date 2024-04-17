@@ -5,9 +5,9 @@ from torch.utils.data import Dataset
 import torch.nn as nn
 
 
-class RNN(nn.Module):
+class SimpleRNN(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
-        super(RNN, self).__init__()
+        super(SimpleRNN, self).__init__()
         self.hidden_size = hidden_size
 
         self.rnn = nn.RNN(input_size, hidden_size)
@@ -20,9 +20,9 @@ class RNN(nn.Module):
         return output
 
 
-class BiRNN(nn.Module):
+class SimpleBiRNN(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
-        super(BiRNN, self).__init__()
+        super(SimpleBiRNN, self).__init__()
         self.hidden_size = hidden_size
 
         self.rnn = nn.RNN(input_size, hidden_size, bidirectional=True)
@@ -35,9 +35,9 @@ class BiRNN(nn.Module):
         return output
 
 
-class LSTM(nn.Module):
+class SimpleLSTM(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
-        super(LSTM, self).__init__()
+        super(SimpleLSTM, self).__init__()
         self.hidden_size = hidden_size
 
         self.lstm = nn.LSTM(input_size, hidden_size)
@@ -53,9 +53,9 @@ class LSTM(nn.Module):
         return output
 
 
-class BiLSTM(nn.Module):
+class SimpleBiLSTM(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
-        super(BiLSTM, self).__init__()
+        super(SimpleBiLSTM, self).__init__()
         self.hidden_size = hidden_size
 
         self.lstm = nn.LSTM(input_size, hidden_size, bidirectional=True)
