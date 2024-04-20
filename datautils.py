@@ -168,7 +168,7 @@ def get_device():
     return device
 
 
-def build_vocab(dataset, tokenizer):
+def build_vocab(dataset, tokenizer, min_freq=1):
     """
     Build a vocabulary from a dataset using a tokenizer.
 
@@ -183,7 +183,13 @@ def build_vocab(dataset, tokenizer):
     counter = Counter()
     for string_ in dataset:
         counter.update(tokenizer(string_))
-    return Vocab(vocab(counter, specials=["<unk>", "<pad>", "<bos>", "<eos>"]))
+    return Vocab(
+        vocab(
+            counter,
+            specials=["<unk>", "<pad>", "<bos>", "<eos>"],
+            min_freq=min_freq,
+        )
+    )
 
 
 def data_process(dataset, vocab, tokenizer):
