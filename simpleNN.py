@@ -7,26 +7,19 @@ from torch.utils.data import DataLoader
 
 
 class NeuralNetwork(nn.Module):
-    def __init__(self, input_size):
-        super().__init__()
-        self.device = (
-            "cuda:0"
-            if torch.cuda.is_available()
-            else "mps" if torch.backends.mps.is_available() else "cpu"
-        )
-        print(self.device)
-        self.flatten = nn.Flatten()
-        self.linear_relu_stack = nn.Sequential(
-            nn.Linear(input_size, 20, dtype=torch.float),
+    def __init__(self, input_size, hidden_size=20, output_size=1):
+        super(NeuralNetwork, self).__init__()
+
+        self.stack = nn.Sequential(
+            nn.Linear(input_size, hidden_size),
             nn.Sigmoid(),
-            nn.Linear(20, 1, dtype=torch.float),
+            nn.Linear(hidden_size, output_size),
             nn.Sigmoid(),
         )
 
     def forward(self, x):
-        x = self.flatten(x)
-        logits = self.linear_relu_stack(x)
-        return logits
+        x = self.stack(x)
+        return x
 
 
 def train(dataloader, model, loss_fn, optimizer, epochs=5):

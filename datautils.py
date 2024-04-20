@@ -1,7 +1,11 @@
+from collections import Counter
 import pandas as pd
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.feature_extraction.text import TfidfVectorizer
 import numpy as np
+import torch
+from torchtext.vocab import vocab, Vocab
+from torch.nn.utils.rnn import pad_sequence
 
 
 def split_holdout_dataset(path, no_val=False):
@@ -94,10 +98,10 @@ def split_kfold_dataset(path, no_val=False, n_splits=5):
     X_train, X_val, y_train, y_val = [], [], [], []
 
     for train_indices, val_indices in kf.split(X=X_dev, y=y_dev):
-        X_train.append(X_dev[train_indices])
-        y_train.append(y_dev[train_indices])
-        X_val.append(X_dev[val_indices])
-        y_val.append(y_dev[val_indices])
+        X_train.append(X_dev[train_indices].reset_index(drop=True))
+        y_train.append(y_dev[train_indices].reset_index(drop=True))
+        X_val.append(X_dev[val_indices].reset_index(drop=True))
+        y_val.append(y_dev[val_indices].reset_index(drop=True))
 
     return X_train, y_train, X_val, y_val, X_test, y_test
 
@@ -149,3 +153,105 @@ def documents_vector_wv(documents, wv):
             # All vectors are of the same size
             document_vectors.append(np.zeros(wv[0].shape[0]))
     return document_vectors
+
+
+# obtain pytorch device
+def get_device():
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
+
+    else:
+        device = torch.device("cpu")
+    return device
+
+
+def build_vocab(dataset, tokenizer):
+    """
+    Build a vocabulary from a dataset using a tokenizer.
+
+    Args:
+        dataset (str): pandas.core.series.Series, the dataset to build the vocabulary from.
+        tokenizer (callable): A function that tokenizes a string.
+
+    Returns:
+        Vocab: A vocabulary object containing the tokenized words.
+
+    """
+    counter = Counter()
+    for string_ in dataset:
+        counter.update(tokenizer(string_))
+    return Vocab(vocab(counter, specials=["<unk>", "<pad>", "<bos>", "<eos>"]))
+
+
+def data_process(dataset, vocab, tokenizer):
+    data = []
+    for text in dataset:
+        tensor_ = torch.tensor(
+            [vocab[token] for token in tokenizer(text)],
+            dtype=torch.long,
+        )
+        data.append(tensor_)
+    return data
+
+
+class TextDataset(torch.utils.data.Dataset):
+    """
+    A custom PyTorch dataset for text data.
+
+    Args:
+        X (list): The input data.
+        y (list): The target data.
+        vocab (list): The vocabulary used for encoding the data.
+
+    Raises:
+        ValueError: If the lengths of X and y are not equal.
+
+    Attributes:
+        X (list): The input data.
+        y (list): The target data.
+
+    Methods:
+        __getitem__(self, idx): Returns a single data item and its corresponding target.
+        __len__(self): Returns the total number of data items in the dataset.
+        generate_batch(data_batch): A helper method to generate a batch of data.
+
+    """
+
+    def __init__(self, X, y, data_vocab):
+        if len(X) != len(y):
+            raise ValueError("X and y must have the same number of items.")
+        self.X = X
+        self.y = y
+        self.data_vocab = data_vocab
+
+    def __getitem__(self, idx):
+        return self.X[idx], self.y[idx]
+
+    def __len__(self):
+        return len(self.X)
+
+    def generate_batch(self, data_batch):
+        """
+        Generate a batch of padded sequences.
+
+        Args:
+            data_batch: A batch of sequences represented as a list of tensors.
+
+        Returns:
+            torch.Tensor: A tensor representing the padded batch of sequences.
+        """
+
+        (xx, yy) = zip(*data_batch)
+        x_lens = [len(x) for x in xx]
+
+        xx = pad_sequence(
+            xx,
+            batch_first=True,
+            padding_value=self.data_vocab["<pad>"],
+        )
+        yy = torch.tensor(yy, dtype=torch.int64).reshape(-1, 1)
+        x_lens = torch.tensor(x_lens, dtype=torch.long)
+        return xx, yy, x_lens
