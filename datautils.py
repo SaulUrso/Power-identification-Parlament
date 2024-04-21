@@ -64,11 +64,13 @@ def split_kfold_dataset(path, no_val=False, n_splits=5):
 
     Args:
         path (str): The path to the dataset file.
-        no_val (bool, optional): If True, no validation set will be created and only train and test sets will be returned. Defaults to False.
+        no_val (bool, optional): If True, no validation set will be created and
+                only train and test sets will be returned. Defaults to False.
         n_splits (int, optional): The number of folds in the cross-validation. Defaults to 5.
 
     Returns:
-        tuple: A tuple containing the train, validation, and test sets. If no_val is True, the tuple will only contain the train and test sets.
+        tuple: A tuple containing the train, validation, and test sets. If no_val is True,
+                the tuple will only contain the train and test sets.
 
     """
     csv_r = pd.read_csv(path, sep="\t")
@@ -173,8 +175,10 @@ def build_vocab(dataset, tokenizer, min_freq=1):
     Build a vocabulary from a dataset using a tokenizer.
 
     Args:
-        dataset (str): pandas.core.series.Series, the dataset to build the vocabulary from.
+        dataset (pandas.core.series.Series): The dataset to build the vocabulary from.
         tokenizer (callable): A function that tokenizes a string.
+        min_freq (int, optional): The minimum frequency required for a word to be included in the vocabulary. 
+                                    Defaults to 1.
 
     Returns:
         Vocab: A vocabulary object containing the tokenized words.

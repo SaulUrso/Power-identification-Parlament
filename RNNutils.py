@@ -111,11 +111,120 @@ class BiRNN(nn.Module):
         embedded = self.dropout(self.embedding(x))
         packed_embedded = nn.utils.rnn.pack_padded_sequence(
             embedded,
-            x_lens.to(self.device),
+            x_lens,
             batch_first=True,
             enforce_sorted=False,
         )
         packed_output, hidden = self.rnn(packed_embedded)
+        hidden = torch.cat((hidden[-2, :, :], hidden[-1, :, :]), dim=1)
+        output = self.fc(hidden)
+        return self.activation(output)
+
+
+class LSTM(nn.Module):
+
+    def __init__(
+        self,
+        input_dim,
+        embedding_dim,
+        hidden_dim,
+        output_dim=1,
+        dropout=0,
+        device="cpu",
+    ) -> None:
+        """
+        Long Short-Term Memory (LSTM) module for sequence classification.
+
+        Args:
+            input_dim (int): The size of the input vocabulary.
+            embedding_dim (int): The dimension of the word embeddings.
+            hidden_dim (int): The dimension of the hidden state of the LSTM.
+            output_dim (int, optional): The dimension of the output. Defaults to 1.
+            dropout (float, optional): The dropout probability. Defaults to 0.
+            device (str, optional): The device to run the module on. Defaults to "cpu".
+        """
+        super().__init__()
+        self.device = device
+        self.embedding = nn.Embedding(input_dim, embedding_dim)
+        self.lstm = nn.LSTM(embedding_dim, hidden_dim, batch_first=True)
+        self.fc = nn.Linear(hidden_dim, output_dim)
+        self.dropout = nn.Dropout(p=dropout)
+        self.activation = nn.Sigmoid()
+
+    def forward(self, x, x_lens):
+        """
+        Forward pass of the LSTM module.
+
+        Args:
+            x (torch.Tensor): The input tensor of shape (batch_size, sequence_length).
+            x_lens (torch.Tensor): The lengths of the input sequences.
+
+        Returns:
+            torch.Tensor: The output tensor of shape (batch_size, output_dim).
+        """
+        embedded = self.dropout(self.embedding(x))
+        packed_embedded = nn.utils.rnn.pack_padded_sequence(
+            embedded,
+            x_lens,
+            batch_first=True,
+            enforce_sorted=False,
+        )
+        packed_output, (hidden, cell) = self.lstm(packed_embedded)
+        output = self.fc(hidden.squeeze(0))
+        return self.activation(output)
+
+
+class BiLSTM(nn.Module):
+
+    def __init__(
+        self,
+        input_dim,
+        embedding_dim,
+        hidden_dim,
+        output_dim=1,
+        dropout=0,
+        device="cpu",
+    ) -> None:
+        """
+        Bidirectional Long Short-Term Memory (BiLSTM) module.
+
+        Args:
+            input_dim (int): The size of the input vocabulary.
+            embedding_dim (int): The dimension of the word embeddings.
+            hidden_dim (int): The dimension of the hidden state of the LSTM.
+            output_dim (int, optional): The dimension of the output. Defaults to 1.
+            dropout (float, optional): The dropout probability. Defaults to 0.
+            device (str, optional): The device to run the module on. Defaults to "cpu".
+        """
+        super().__init__()
+        self.device = device
+        self.embedding = nn.Embedding(input_dim, embedding_dim)
+        self.lstm = nn.LSTM(
+            embedding_dim, hidden_dim, batch_first=True, bidirectional=True
+        )
+        self.fc = nn.Linear(hidden_dim * 2, output_dim)
+        self.dropout = nn.Dropout(p=dropout)
+        self.activation = nn.Sigmoid()
+
+    def forward(self, x, x_lens):
+        """
+        Forward pass of the BiLSTM module.
+
+        Args:
+            x (torch.Tensor): The input tensor of shape [batch size, sentence length].
+            x_lens (torch.Tensor): The lengths of the input sentences in the batch.
+
+        Returns:
+            torch.Tensor: The output tensor of shape [batch size, output dim].
+        """
+        embedded = self.dropout(self.embedding(x))
+        packed_embedded = nn.utils.rnn.pack_padded_sequence(
+            embedded,
+            x_lens,
+            batch_first=True,
+            enforce_sorted=False,
+        )
+        packed_output, (hidden, cell) = self.lstm(packed_embedded)
         hidden = torch.cat((hidden[-2, :, :], hidden[-1, :, :]), dim=1)
         output = self.fc(hidden)
         return self.activation(output)
