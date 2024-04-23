@@ -12,3 +12,6 @@ Dataset
 
 # Ignore model checkpoints
 Checkpoints
+
+#ignore huggingface checkpoints
+test_trainer
