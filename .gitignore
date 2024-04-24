@@ -7,8 +7,11 @@ Embeddings
 # Ignora cartelle cache
 __pycache__
 
-# Ignore dataset
-Dataset
+# Ignore contents of dataset directory
+Dataset/*
+
+#but not the original dataset
+!Dataset/power-gb-train.tsv
 
 # Ignore model checkpoints
 Checkpoints
