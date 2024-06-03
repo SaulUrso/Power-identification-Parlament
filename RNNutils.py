@@ -65,6 +65,7 @@ class RNN(nn.Module):
         return self.activation(output)
 
 
+
 class BiRNN(nn.Module):
 
     def __init__(
@@ -73,7 +74,9 @@ class BiRNN(nn.Module):
         embedding_dim,
         hidden_dim,
         output_dim=1,
+        n_layers=1,
         dropout=0,
+        mean_pooling=False,
         device="cpu",
     ) -> None:
         """
@@ -86,6 +89,7 @@ class BiRNN(nn.Module):
             output_dim (int, optional): The dimension of the output. Defaults to 1.
             dropout (float, optional): The dropout probability. Defaults to 0.
             device (str, optional): The device to run the module on. Defaults to "cpu".
+            n_layers (int, optional): The number of hidden layers in the feedforward network. Defaults to 1.
         """
         super().__init__()
         self.device = device
@@ -93,10 +97,22 @@ class BiRNN(nn.Module):
         self.rnn = nn.RNN(
             embedding_dim, hidden_dim, batch_first=True, bidirectional=True
         )
-        self.fc = nn.Linear(hidden_dim * 2, output_dim)
+        if n_layers > 1:
+            layers = [nn.Linear(hidden_dim * 2, hidden_dim)]
+            for _ in range(n_layers-2):
+                layers.append(nn.Dropout(p=dropout))
+                layers.append(nn.Sigmoid())
+                layers.append(nn.Linear(hidden_dim, hidden_dim))
+            layers.append(nn.Dropout(p=dropout))
+            layers.append(nn.Sigmoid())
+            layers.append(nn.Linear(hidden_dim, output_dim))
+            self.fc = nn.Sequential(*layers)
+        else:
+            self.fc = nn.Linear(hidden_dim * 2, output_dim)
         self.dropout = nn.Dropout(p=dropout)
         self.activation = nn.Sigmoid()
 
+        self.mean_pooling = mean_pooling
     def forward(self, x, x_lens):
         """
         Forward pass of the BiRNN module.
@@ -116,8 +132,13 @@ class BiRNN(nn.Module):
             enforce_sorted=False,
         )
         packed_output, hidden = self.rnn(packed_embedded)
-        hidden = torch.cat((hidden[-2, :, :], hidden[-1, :, :]), dim=1)
-        output = self.fc(hidden)
+
+        if self.mean_pooling:
+            output, _ = nn.utils.rnn.pad_packed_sequence(packed_output, batch_first=True)
+            output=self.fc(torch.mean(output, dim=1))
+        else:
+            hidden = torch.cat((hidden[-2, :, :], hidden[-1, :, :]), dim=1)
+            output = self.fc(hidden)
         return self.activation(output)
 
 
@@ -183,6 +204,9 @@ class BiLSTM(nn.Module):
         hidden_dim,
         output_dim=1,
         dropout=0,
+        n_layers=1,
+        mean_pooling=False,
+        pretrained_embedding=None,
         device="cpu",
     ) -> None:
         """
@@ -194,17 +218,40 @@ class BiLSTM(nn.Module):
             hidden_dim (int): The dimension of the hidden state of the LSTM.
             output_dim (int, optional): The dimension of the output. Defaults to 1.
             dropout (float, optional): The dropout probability. Defaults to 0.
+            pretrained_embedding (torch.Tensor, optional): A tensor of pretrained embeddings. Defaults to None.
             device (str, optional): The device to run the module on. Defaults to "cpu".
         """
         super().__init__()
         self.device = device
-        self.embedding = nn.Embedding(input_dim, embedding_dim)
+        if pretrained_embedding is not None:
+            self.embedding = nn.Embedding.from_pretrained(pretrained_embedding)
+            self.embedding.requires_grad = False
+        else:
+            self.embedding = nn.Embedding(input_dim, embedding_dim)
         self.lstm = nn.LSTM(
-            embedding_dim, hidden_dim, batch_first=True, bidirectional=True
+            embedding_dim, 
+            hidden_dim, 
+            batch_first=True, 
+            bidirectional=True
         )
-        self.fc = nn.Linear(hidden_dim * 2, output_dim)
+        #self.fc = nn.Linear(hidden_dim * 2, output_dim)
+        if n_layers > 1:    
+            layers = [nn.Linear(hidden_dim * 2, hidden_dim)]
+            for _ in range(n_layers-2):
+                layers.append(nn.Dropout(p=dropout))
+                layers.append(nn.Sigmoid())
+                layers.append(nn.Linear(hidden_dim, hidden_dim))
+            layers.append(nn.Dropout(p=dropout))
+            layers.append(nn.Sigmoid())
+            layers.append(nn.Linear(hidden_dim, output_dim))
+            self.fc = nn.Sequential(*layers)
+        else:
+            self.fc = nn.Linear(hidden_dim * 2, output_dim)
+
         self.dropout = nn.Dropout(p=dropout)
         self.activation = nn.Sigmoid()
+
+        self.mean_pooling = mean_pooling
 
     def forward(self, x, x_lens):
         """
@@ -225,10 +272,13 @@ class BiLSTM(nn.Module):
             enforce_sorted=False,
         )
         packed_output, (hidden, cell) = self.lstm(packed_embedded)
-        hidden = torch.cat((hidden[-2, :, :], hidden[-1, :, :]), dim=1)
-        output = self.fc(hidden)
+        if self.mean_pooling:
+            unpacked_output, _ = nn.utils.rnn.pad_packed_sequence(packed_output, batch_first=True)
+            output=self.fc(torch.mean(unpacked_output, dim=1))
+        else:
+            hidden = torch.cat((hidden[-2, :, :], hidden[-1, :, :]), dim=1)
+            output = self.fc(hidden)
         return self.activation(output)
-
 
 def train_rnn(
     model: nn.Module,
@@ -252,6 +302,7 @@ def train_rnn(
     Returns:
         float: The average loss per epoch.
     """
+    model.to(device)
     model.train()
 
     epoch_loss = 0
@@ -261,16 +312,20 @@ def train_rnn(
 
         optimizer.zero_grad()
 
-        output = model(src, src_len)
+        output = model(src, src_len).to(device)
         # TODO: check if the output is correct
 
         loss = criterion(output, trg.float())
+
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
         optimizer.step()
+
+
         epoch_loss += loss.item()
 
     return epoch_loss / len(iterator)
+
 
 
 def evaluate(
