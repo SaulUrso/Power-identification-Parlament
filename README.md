@@ -2,12 +2,25 @@
 Project for the HLT course year23/24 @Unipi 
 
 To execute the virtual enviroment:
+
 1 python -m venv myenv  create a virtual enviroment using venv
+
+
 2 myenv\Scripts\activate to activate the enviroment in windows
+
+
   source myenv/bin/activate to activate the enviroment in macOS and Linux
+
+  
 3 pip install -r requirements.txt to install the requirements
+
+
 4 pip list to verify the correct installation of the requirements
+
+
 5 deactivate to deactivate the enviroment
+
+
 
 To run the experiments on the random forest run "Random_Forest_Final.ipynb" with "preprocessing_utils.py" in the same folder.
 
