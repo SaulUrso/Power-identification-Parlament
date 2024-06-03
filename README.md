@@ -37,4 +37,4 @@ To execute in the correct way these 4 files(TF-IDF embeddings.ipynb, w2w_embeddi
 To fine-tune  the pretrained models, we provide you a kaggle notebook. Notice that the environment used there is different from the one provided in requirements.txt.
 Here there is the url of the Kaggle notebook: https://www.kaggle.com/code/saulurso/finetuning-politics
 
-requiremnts.txt: Is the file that contains the dipendences for the python enviroment
+requirements.txt: Is the file that contains the dipendences for the python enviroment
