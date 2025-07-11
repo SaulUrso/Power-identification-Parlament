@@ -1,89 +1,145 @@
 # NLP-project
 Project for the HLT course year23/24 @Unipi 
+## Table of Contents
 
-To download the dataset: https://drive.google.com/file/d/1mLmE6wP83fMDvHHUIXYHxaPGhAI1iPNx/view?usp=sharing
+- [Dataset Download](#dataset-download)
+- [Project Structure](#project-structure)
+- [Virtual Environment Setup](#virtual-environment-setup)
+- [Experiments](#experiments)
+  - [Random Forest](#random-forest)
+  - [TF-IDF Embeddings](#tf-idf-embeddings)
+  - [Word2Vec Embeddings](#word2vec-embeddings)
+  - [FastText Embeddings](#fasttext-embeddings)
+  - [Pretrained Word2Vec](#pretrained-word2vec)
+  - [RNN Experiments](#rnn-experiments)
+- [Executing the Notebooks](#executing-the-notebooks)
+- [Fine-Tuned Models](#fine-tuned-models)
+- [Requirements](#requirements)
 
-For the notebooks to work put the dataset in the Dataset directory
+---
 
-## Virtual environment
-To execute the virtual enviroment:
+## Dataset Download
 
-1 `python -m venv myenv` to  create a virtual enviroment using venv
+Download the dataset [here](https://drive.google.com/file/d/1mLmE6wP83fMDvHHUIXYHxaPGhAI1iPNx/view?usp=sharing) and place it in the `Dataset` directory for the notebooks to work.
 
+## Project Structure
 
-2 `myenv\Scripts\activate` to activate the enviroment in windows
+```
+NLP-project/
+├── Dataset/
+├── Embeddings/
+├── Result/
+├── datautils.py
+├── preprocessing_utils.py
+├── RNNutils.py
+├── fine_tuning_utils.py
+├── requirements.txt
+├── TF-IDF embeddings.ipynb
+├── w2w_embeddings.ipynb
+├── fast_text.ipynb
+├── pre trained w2v.ipynb
+├── RNN_experiments.ipynb
+└── finetuning-politics.ipynb
+```
 
+## Virtual Environment Setup
 
-  `source myenv/bin/activate` to activate the enviroment in macOS and Linux
+1. Create a virtual environment:
+   ```bash
+   python -m venv myenv
+   ```
+2. Activate the environment:
+   - **Windows:**  
+     `myenv\Scripts\activate`
+   - **macOS/Linux:**  
+     `source myenv/bin/activate`
+3. Install requirements:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Verify installation:
+   ```bash
+   pip list
+   ```
+5. Deactivate when done:
+   ```bash
+   deactivate
+   ```
 
-  
-3 `pip install -r requirements.txt` to install the requirements
+**Notes:**
+- The environment does **not** include PyTorch packages for CUDA.
+- If you have dependency issues, try Python 3.11:
+  ```bash
+  py -3.11 -m venv myenv
+  # or
+  python3.11 -m venv myenv
+  ```
+- For spaCy pipelines, install them with:
+  ```bash
+  python -m spacy download en_core_web_sm
+  python -m spacy download en_core_web_md
+  python -m spacy download en_core_web_lg
+  ```
+- Upgrading pip before installing requirements may help:
+  ```bash
+  python -m pip install --upgrade pip
+  ```
 
+## Experiments
 
-4 `pip list` to verify the correct installation of the requirements
+### Random Forest
 
+Run `Random_Forest_Final.ipynb` with `preprocessing_utils.py` in the same folder.
 
-5 `deactivate` to deactivate the enviroment
+### TF-IDF Embeddings
 
+- Create TF-IDF embeddings and evaluate with logistic regression.
+- Results of grid search and test set evaluation are saved to files.
 
+### Word2Vec Embeddings
 
-**NOTE1**: the environment provided does NOT include the pytorch packages for training on CUDA devices
-**NOTE2**: if you are unable to resolve package dependencies, try using python 3.11 to create the environment (This is due to gensim which requires a specific verison of scipy). To do that create the environment using either:
+- Create Word2Vec embeddings and evaluate with logistic regression.
+- Grid search over context window and vector size.
+- Saves models and results for each configuration.
+- Computes word analogy for the best model.
 
-`py -3.11 -m venv myenv`
+### FastText Embeddings
 
-or:
+- Similar to Word2Vec, but with FastText embeddings.
+- Grid search over context window and vector size.
+- Saves models and results for each configuration.
+- Computes word analogy for the best model.
 
-`python3.11 -m venv myenv`
+### Pretrained Word2Vec
 
-**NOTE3**: when trying to use the spaCy pipelines, do note that they require to be installed beforehand. You can download all the necessary pipelines by executing the following commands:
+- Test different pretrained models from Gensim with logistic regression.
+- Grid search over logistic regression hyperparameters.
+- Fine-tuning for Word2Vec and FastText using different tokenizers (`punkt`, `bert_based_uncased`).
+- Results are provided for validation set only.
 
-`python -m spacy download en_core_web_sm` to download the small pipeline
+### RNN Experiments
 
-`python -m spacy download en_core_web_md` to download the medium pipeline
+- Requires `RNNutils.py` and `datautils.py` in the same folder.
+- Loads and splits dataset, saves splits.
+- Optionally downloads pretrained embeddings.
+- Trains RNN models, logs metrics, and saves results to CSV.
+- Visualizes and evaluates model performance.
 
-`python -m spacy download en_core_web_lg` to download the large pipeline
+## Executing the Notebooks
 
-**NOTE4**: If having problems, upgrading pip before installing the requirements could solve them.
+For `TF-IDF embeddings.ipynb`, `w2w_embeddings.ipynb`, `fast_text.ipynb`, and `pre trained w2v.ipynb`, ensure the following:
+- Folders: `Result/` and `Embeddings/`
+- File: `datautils.py` in the same directory
 
+## Fine-Tuned Models
 
-## Random forest
-To run the experiments on the random forest run "Random_Forest_Final.ipynb" with "preprocessing_utils.py" in the same folder.
-## TF-IDF embeddings.ipynb
-In this file we create the tfidf embeddings and we try them on a logistic regression. 
+- Fine-tuning is demonstrated in a [Kaggle notebook](https://www.kaggle.com/code/saulurso/finetuning-politics).
+- A copy of `finetuning-politics.ipynb` is included for reference (may not run locally).
+- Requires `fine_tuning_utils.py`.
+- The Kaggle environment differs from `requirements.txt`.
 
-This file will create a file with the results of the grid search over the hyperparameters of the logistic regression and a file of the results over the the test set of the logistic regression with the best combination of the hyperparameters.
-## w2w_embeddings.ipynb
-In this file we create the wor2vec embeddings and we try them on a logistic regression. In this file we apply a grid search over the possible values of the context window and vector size of word2vec. For each combination of this values a file is created and these file contain the word2vec models with that specific combination of context window and vector size. w2w_embeddings.ipynb will also create, for each word2vec model, a file with the results of the grid search over the hyperparameters of the logistic regression. After that we take the best model, basend on the performance of the logistic regression on validation set, and we create a file of the results ,over the the test set, of the logistic regression with the best combination of the hyperparameters for the best word2vec model. We also compute the word analogy for the best model.
+## Requirements
 
+All dependencies are listed in `requirements.txt`.
 
-## fast_text.ipynb
-In this file we create the fasttext embeddings and we try them on a logistic regression. In this file we apply a grid search over the possible values of the context window and vector size of fasttext. For each combination of this values a file is created and these file contain the fasttext models with that specific combination of context window and vector size. fast_text.ipynb will also create, for each fasttext model, a file with the results of the grid search over the hyperparameters of the logistic regression. After that we take the best model, basend on the performance of the logistic regression on validation set, and we create a file of the results ,over the the test set, of the logistic regression with the best combination of the hyperparameters for the best fasttext model. We also compute the word analogy for the best model.
-
-## pre trained w2v.ipynb
-In this file we work with pretrained models and fine tuned models. In this file you can test differnt pretrained models, the ones avilable on gensim, over a logistic regression. In this code a file will be produce for every pretrained model that is tried on the logistic regression (we apply a grid search over the hyperparameters of the logistic regression). We also provide metods to make a fine tuning, starting from the pretrained embeddings, of word2vec models and fasttext models( we use 2 different tokenizer: punkt and bert_based_uncased). Also in this case different file will be produced with the results of the fine tuning model over the logist regression. The results provided on this file are only about the validation set because the scores are not good enough.
-
-## RNN_experiments.ipynb
-
-This file was used to make all the experiments regarding the RNNs, to run the file you also need to have the RNNutils.py and datautils.py scripts in the same folder.
-
-The notebook contains the code to load and split the training dataset provided by the challenge organizers, and saves them.
-
-Additionally it is possible to download a pretrained embedding using the gensim downloader API and create the embeddings to use in the models.
-
-After loading the dataset it creates a model and uses it to start the training, duiring the training some metrics will be displayed like trainig,validation,F1-score etc.etc. and will save the performance on a .csv file inside the Results folder.
-
-After trainig we can visualize the model performances the previously mentioned .csv file and evaluate the model on the test set.
-
-## Executing the notebooks
-To execute in the correct way these 4 files(TF-IDF embeddings.ipynb, w2w_embeddings.ipynb, fast_text.ipynb,pre trained w2v.ipynb) a folder 'Result' and 'Embeddings' is needed and the file datautils.py needs to be in the same folder.
-
-## Fine tuned models
-To fine-tune  the pretrained models, we provide you a kaggle notebook. Notice that the environment used there is different from the one provided in requirements.txt.
-Here there is the url of the Kaggle notebook: https://www.kaggle.com/code/saulurso/finetuning-politics
-To show the cell outputs, we also put a copy of **finetuning-politics.ipynb** in the directory, however it will not run due to the environment and the structure of the directories it requires.
-
-
-requirements.txt: It is the file that contains the dipendences for the python enviroment
-
-The fine tuning notebook also needs fine_tuning_utils.py in order to work properly.
+---
