@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from sklearn.metrics import precision_recall_fscore_support
+import sklearn
 
 
 class RNN(nn.Module):
@@ -65,7 +66,6 @@ class RNN(nn.Module):
         return self.activation(output)
 
 
-
 class BiRNN(nn.Module):
 
     def __init__(
@@ -99,7 +99,7 @@ class BiRNN(nn.Module):
         )
         if n_layers > 1:
             layers = [nn.Linear(hidden_dim * 2, hidden_dim)]
-            for _ in range(n_layers-2):
+            for _ in range(n_layers - 2):
                 layers.append(nn.Dropout(p=dropout))
                 layers.append(nn.Sigmoid())
                 layers.append(nn.Linear(hidden_dim, hidden_dim))
@@ -113,6 +113,7 @@ class BiRNN(nn.Module):
         self.activation = nn.Sigmoid()
 
         self.mean_pooling = mean_pooling
+
     def forward(self, x, x_lens):
         """
         Forward pass of the BiRNN module.
@@ -134,8 +135,10 @@ class BiRNN(nn.Module):
         packed_output, hidden = self.rnn(packed_embedded)
 
         if self.mean_pooling:
-            output, _ = nn.utils.rnn.pad_packed_sequence(packed_output, batch_first=True)
-            output=self.fc(torch.mean(output, dim=1))
+            output, _ = nn.utils.rnn.pad_packed_sequence(
+                packed_output, batch_first=True
+            )
+            output = self.fc(torch.mean(output, dim=1))
         else:
             hidden = torch.cat((hidden[-2, :, :], hidden[-1, :, :]), dim=1)
             output = self.fc(hidden)
@@ -229,15 +232,12 @@ class BiLSTM(nn.Module):
         else:
             self.embedding = nn.Embedding(input_dim, embedding_dim)
         self.lstm = nn.LSTM(
-            embedding_dim, 
-            hidden_dim, 
-            batch_first=True, 
-            bidirectional=True
+            embedding_dim, hidden_dim, batch_first=True, bidirectional=True
         )
-        #self.fc = nn.Linear(hidden_dim * 2, output_dim)
-        if n_layers > 1:    
+        # self.fc = nn.Linear(hidden_dim * 2, output_dim)
+        if n_layers > 1:
             layers = [nn.Linear(hidden_dim * 2, hidden_dim)]
-            for _ in range(n_layers-2):
+            for _ in range(n_layers - 2):
                 layers.append(nn.Dropout(p=dropout))
                 layers.append(nn.Sigmoid())
                 layers.append(nn.Linear(hidden_dim, hidden_dim))
@@ -273,12 +273,15 @@ class BiLSTM(nn.Module):
         )
         packed_output, (hidden, cell) = self.lstm(packed_embedded)
         if self.mean_pooling:
-            unpacked_output, _ = nn.utils.rnn.pad_packed_sequence(packed_output, batch_first=True)
-            output=self.fc(torch.mean(unpacked_output, dim=1))
+            unpacked_output, _ = nn.utils.rnn.pad_packed_sequence(
+                packed_output, batch_first=True
+            )
+            output = self.fc(torch.mean(unpacked_output, dim=1))
         else:
             hidden = torch.cat((hidden[-2, :, :], hidden[-1, :, :]), dim=1)
             output = self.fc(hidden)
         return self.activation(output)
+
 
 def train_rnn(
     model: nn.Module,
@@ -321,11 +324,9 @@ def train_rnn(
         torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
         optimizer.step()
 
-
         epoch_loss += loss.item()
 
     return epoch_loss / len(iterator)
-
 
 
 def evaluate(
@@ -371,3 +372,47 @@ def evaluate(
     )
 
     return epoch_loss / len(iterator), precision, recall, f1
+
+
+def evaluate_confusion_matrix(
+    model: nn.Module,
+    iterator: torch.utils.data.DataLoader,
+    criterion: nn.Module,
+    device: torch.device = torch.device("cpu"),
+):
+    """
+    Evaluate the model on the given data iterator.
+
+    Args:
+        model (nn.Module): The model to be evaluated.
+        iterator (torch.utils.data.DataLoader): The data iterator.
+        criterion (nn.Module): The loss criterion.
+        device (torch.device, optional): The device to run the evaluation on. Defaults to torch.device("cpu").
+
+    Returns:
+        float: The average loss over the evaluation data.
+    """
+    model.eval()
+    epoch_loss = 0
+
+    # Lists to store true labels and predicted labels
+    true_labels = []
+    predicted_labels = []
+
+    with torch.no_grad():
+        for _, (src, trg, src_len) in enumerate(iterator):
+            src, trg = src.to(device), trg.to(device)
+
+            output = model(src, src_len)
+            loss = criterion(output, trg.float())
+
+            epoch_loss += loss.item()
+
+            pred_l = torch.round(output)
+            predicted_labels.extend(pred_l.cpu().numpy())
+            true_labels.extend(trg.cpu().numpy())
+
+    precision, recall, f1, _ = precision_recall_fscore_support(
+        true_labels, predicted_labels, average="macro"
+    )
+    return sklearn.metrics.confusion_matrix(true_labels, predicted_labels)

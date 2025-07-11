@@ -1,7 +1,11 @@
 # NLP-project
 Project for the HLT course year23/24 @Unipi 
 
-## virtual environment
+To download the dataset: https://drive.google.com/file/d/1mLmE6wP83fMDvHHUIXYHxaPGhAI1iPNx/view?usp=sharing
+
+For the notebooks to work put the dataset in the Dataset directory
+
+## Virtual environment
 To execute the virtual enviroment:
 
 1 `python -m venv myenv` to  create a virtual enviroment using venv
@@ -21,8 +25,29 @@ To execute the virtual enviroment:
 
 5 `deactivate` to deactivate the enviroment
 
-## random forest
 
+
+**NOTE1**: the environment provided does NOT include the pytorch packages for training on CUDA devices
+**NOTE2**: if you are unable to resolve package dependencies, try using python 3.11 to create the environment (This is due to gensim which requires a specific verison of scipy). To do that create the environment using either:
+
+`py -3.11 -m venv myenv`
+
+or:
+
+`python3.11 -m venv myenv`
+
+**NOTE3**: when trying to use the spaCy pipelines, do note that they require to be installed beforehand. You can download all the necessary pipelines by executing the following commands:
+
+`python -m spacy download en_core_web_sm` to download the small pipeline
+
+`python -m spacy download en_core_web_md` to download the medium pipeline
+
+`python -m spacy download en_core_web_lg` to download the large pipeline
+
+**NOTE4**: If having problems, upgrading pip before installing the requirements could solve them.
+
+
+## Random forest
 To run the experiments on the random forest run "Random_Forest_Final.ipynb" with "preprocessing_utils.py" in the same folder.
 ## TF-IDF embeddings.ipynb
 In this file we create the tfidf embeddings and we try them on a logistic regression. 
@@ -50,13 +75,15 @@ After loading the dataset it creates a model and uses it to start the training, 
 
 After trainig we can visualize the model performances the previously mentioned .csv file and evaluate the model on the test set.
 
-## executing the notebooks
+## Executing the notebooks
 To execute in the correct way these 4 files(TF-IDF embeddings.ipynb, w2w_embeddings.ipynb, fast_text.ipynb,pre trained w2v.ipynb) a folder 'Result' and 'Embeddings' is needed and the file datautils.py needs to be in the same folder.
 
-## fine tuned models
+## Fine tuned models
 To fine-tune  the pretrained models, we provide you a kaggle notebook. Notice that the environment used there is different from the one provided in requirements.txt.
 Here there is the url of the Kaggle notebook: https://www.kaggle.com/code/saulurso/finetuning-politics
+To show the cell outputs, we also put a copy of **finetuning-politics.ipynb** in the directory, however it will not run due to the environment and the structure of the directories it requires.
+
 
 requirements.txt: It is the file that contains the dipendences for the python enviroment
 
-The fine tuning notebook also need the fine_tuning_utils.py in order to work properly.
+The fine tuning notebook also needs fine_tuning_utils.py in order to work properly.

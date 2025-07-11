@@ -18,3 +18,4 @@ Checkpoints
 
 #ignore huggingface checkpoints
 test_trainer
+venv
